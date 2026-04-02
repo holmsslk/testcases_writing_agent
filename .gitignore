@@ -1,0 +1,42 @@
+# Python cache/build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# IDE/editor temp
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime outputs (do not commit generated artifacts)
+outputs/interim/*
+outputs/interim_diag/*
+outputs/final/*
+outputs/final_diag/*
+
+# Keep output dirs in repository structure if needed
+!outputs/interim/.gitkeep
+!outputs/interim_diag/.gitkeep
+!outputs/final/.gitkeep
+!outputs/final_diag/.gitkeep
+
+# Misc logs/temp
+*.log
+*.tmp
+*.temp
+
+# Accidental local mirror path
+home/

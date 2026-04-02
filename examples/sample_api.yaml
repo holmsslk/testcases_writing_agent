@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Smart Power Control API
+  version: 1.0.0
+servers:
+  - url: https://api.demo.local
+
+paths:
+  /api/v1/devices/{deviceId}/command:
+    post:
+      summary: 下发设备控制指令
+      description: 下发合闸/分闸/参数更新等控制指令，并返回追踪ID。
+      parameters:
+        - in: path
+          name: deviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commandType, operator]
+              properties:
+                commandType:
+                  type: string
+                  enum: [CLOSE, OPEN, SET_PARAM]
+                payload:
+                  type: object
+                operator:
+                  type: string
+      responses:
+        '200':
+          description: 指令受理成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId:
+                    type: string
+                  accepted:
+                    type: boolean
+                  timeoutMs:
+                    type: integer
+                    example: 3000
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: 网关超时
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/commands/{requestId}/ack:
+    get:
+      summary: 查询指令回执
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [PENDING, SUCCESS, FAILED, TIMEOUT]
+                  ackTime:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+        '404':
+          description: 请求不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/devices/{deviceId}/state:
+    get:
+      summary: 查询设备最新状态
+      parameters:
+        - in: path
+          name: deviceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 状态查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deviceId:
+                    type: string
+                  online:
+                    type: boolean
+                  breakerState:
+                    type: string
+                    enum: [OPEN, CLOSE]
+                  temperature:
+                    type: number
+                  stateVersion:
+                    type: integer
+                  reportTime:
+                    type: string
+                    format: date-time
+        '503':
+          description: 设备离线或状态不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: CMD_TIMEOUT
+        message:
+          type: string
+        retryable:
+          type: boolean
+
+x-timeout-policy:
+  commandAckTimeoutMs: 3000
+  maxRetryCount: 2
+  retryIntervalMs: 1000

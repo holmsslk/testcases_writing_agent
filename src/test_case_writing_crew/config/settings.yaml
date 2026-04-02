@@ -1,0 +1,21 @@
+# Global MVP settings (placeholder)
+project:
+  name: test_case_writing_crew
+  stage: mvp
+
+input:
+  supported_types:
+    - prd
+    - api_doc
+    - requirement_table
+
+output:
+  formats:
+    - csv
+    - excel
+  interim_dir: outputs/interim
+  final_dir: outputs/final
+
+human_checkpoints:
+  - requirement_gap_confirmation
+  - final_release_confirmation

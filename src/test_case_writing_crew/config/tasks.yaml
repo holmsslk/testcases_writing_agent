@@ -1,0 +1,108 @@
+# MVP tasks configuration
+requirement_analysis_task:
+  description: >
+    解析 PRD/API 文档/需求表，输出最小充分的标准化需求摘要。
+    强约束：短输出优先，不生成报告式长文，不生成教学解释。
+    模块建议控制在 3~8 个核心模块范围，避免无限扩展。
+    所有自然语言内容默认使用简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "requirement_summary"。
+    不允许新增额外顶层键；不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: requirement_analyst
+  context_sources:
+    - PRD document
+    - API specification
+    - requirement table
+  context_task_keys: []
+
+clarification_task:
+  description: >
+    针对需求中的歧义与缺失信息生成澄清问题，重点覆盖上下位机交互、指令下发/回执、
+    超时/重试、状态同步、恢复、升级/回滚与可诊断性。
+    强约束：最多输出 8 条；仅保留高影响、高不确定、直接影响测试设计的问题；
+    需求明确时可输出 0~3 条，不强行凑满；禁止重复和泛泛问题。
+    所有自然语言内容默认使用简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "clarification_questions"（列表）。
+    每条问题仅允许字段：id/category/question/impact/required。
+    不允许新增额外字段；不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: requirement_analyst
+  context_sources:
+    - RequirementSummary from requirement_analysis_task
+  context_task_keys:
+    - requirement_analysis_task
+
+test_point_generation_task:
+  description: >
+    生成结构化测试点，覆盖功能、接口、权限、边界、异常、兼容、性能、安全、稳定与 DFX。
+    强约束：最多输出 20 条；优先高风险/高价值/核心流程；
+    避免过细拆分，能合并则合并；禁止冗余解释文字。
+    所有自然语言内容默认使用简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "test_points"（列表）。
+    不允许新增额外顶层键；不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: test_analyst
+  context_sources:
+    - RequirementSummary from requirement_analysis_task
+    - ClarificationQuestion list from clarification_task
+  context_task_keys:
+    - clarification_task
+
+test_case_generation_task:
+  description: >
+    将测试点转为可执行、可验证、可导出的结构化测试用例（CSV/Excel）。
+    强约束：默认最多输出 20 条详细测试用例；优先高优先级测试点；
+    每条步骤控制 3~6 步；预期结果控制 1~3 条关键结果；
+    禁止背景长文与教学解释。
+    用例标题、步骤、预期结果必须为简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "test_cases"（列表）。
+    不允许新增额外顶层键；不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: testcase_designer
+  context_sources:
+    - list[TestPoint] from test_point_generation_task
+  context_task_keys:
+    - test_point_generation_task
+
+review_task:
+  description: >
+    评审测试点与测试用例的覆盖性、可执行性、去重和预期结果可验证性。
+    强约束：最多输出 8 条最关键评审意见；禁止重复问题；不写长报告。
+    评审意见必须使用简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "review_result"。
+    评审 comments 建议最多 8 条；不允许新增额外顶层键；
+    不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: quality_reviewer
+  context_sources:
+    - list[TestPoint] from test_point_generation_task
+    - list[TestCase] from test_case_generation_task
+  context_task_keys:
+    - test_case_generation_task
+
+quality_gate_task:
+  description: >
+    生成软硬件一体系统可度量的测试准入/准出标准，覆盖通信、恢复、升级与可诊断性专项门禁。
+    强约束：entry_criteria 最多 8 条，exit_criteria 最多 8 条；
+    仅输出关键门禁，避免空洞模板化描述。
+    门禁说明必须使用简体中文。
+  expected_output: >
+    仅输出 JSON 对象，且仅包含键 "quality_gates"。
+    不允许新增额外顶层键；不允许 markdown 包裹；不允许额外 prose 段落。
+  agent: quality_gate_specialist
+  context_sources:
+    - ReviewResult from review_task
+  context_task_keys:
+    - review_task
+
+export_task:
+  description: >
+    Export reviewed TestPoints/TestCases/QualityGates into CSV and/or Excel deliverables.
+  expected_output: Export manifest with file paths
+  agent: testcase_designer
+  context_sources:
+    - list[TestCase] from test_case_generation_task
+    - ReviewResult from review_task
+    - EntryExitCriteriaSet from quality_gate_task
+  context_task_keys:
+    - quality_gate_task

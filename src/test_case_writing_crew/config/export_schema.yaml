@@ -1,0 +1,12 @@
+# Export schema placeholder
+test_case_columns:
+  - case_id
+  - module
+  - title
+  - preconditions
+  - steps
+  - expected_result
+  - priority
+  - coverage_tags
+  - owner
+  - review_status

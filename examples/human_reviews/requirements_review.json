@@ -1,0 +1,9 @@
+{
+  "approved": true,
+  "requires_regeneration": false,
+  "notes": "Requirements baseline accepted for MVP.",
+  "clarified_context": {
+    "version": "0.1.0",
+    "modules": ["auth", "device", "control", "telemetry", "alert"]
+  }
+}
